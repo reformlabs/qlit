@@ -17,6 +17,8 @@ async function translate(text, from = 'auto', to = 'en') {
     source: from,
     target: to,
     format: 'text'
+  }, {
+    headers: { 'Content-Type': 'application/json' }
   });
   return res.data.translatedText;
 }
