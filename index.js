@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const API_URL = 'https://libretranslate.de';
+const API_URL = 'https://translate.argosopentech.com';
 
 /**
  * Translates text between specified languages using LibreTranslate API.
