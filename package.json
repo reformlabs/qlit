@@ -1,6 +1,6 @@
 {
   "name": "phrasesync",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A smart, customizable phrase and translation matching module for Node.js. Add your own bilingual data and get instant predictions or translations between languages.",
   "main": "index.js",
   "keywords": [
