@@ -1,47 +1,55 @@
 {
-  "name": "phrasesync",
-  "version": "1.0.5",
-  "description": "A smart, customizable phrase and translation matching module for Node.js. Add your own bilingual data and get instant predictions or translations between languages.",
-  "main": "index.js",
+  "name": "@reformlabs/qlit",
+  "version": "2.1.0",
+  "description": "Terminalden hemen çeviri yapın - Lingva REST API powered translator",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "qlit": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "dev": "ts-node src/cli.ts",
+    "prepare": "npm run build"
+  },
   "keywords": [
-    "phrase",
-    "translation",
-    "matching",
-    "bilingual",
-    "nodejs",
-    "multilingual",
-    "fuzzy",
-    "offline",
-    "libretranslate",
+    "qlit",
     "translate",
-    "phrasesync",
-    "phrasesync-nodejs",
-    "phrasesync-node",
-    "phrasesync-node-js",
-    "phrasesync-node-js-module",
-    "phrasesync-node-js-package",
-    "phrasesync-node-js-library",
-    "phrasesync-node-js-module",
-    "phrasesync-node-js-package",
-    "phrasesync-node-js-library",
-    "phrasesync-node-js-module",
-    "phrasesync-node-js-package",
-    "phrasesync-node-js-library",
-    "phrasesync-node-js-module",
-    "phrasesync-node-js-package",
-    "phrasesync-node-js-library"
+    "lingva",
+    "cli",
+    "translator",
+    "typescript",
+    "open source",
+    "javascript"
   ],
-  "author": "rewonsh",
+  "author": "Reform Labs, @costiqiel, @manymq, @vrdons",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rewonsh/phrasesync"
+    "url": "git+https://github.com/reformlabs/qlit.git"
   },
   "bugs": {
-    "url": "https://github.com/rewonsh/phrasesync/issues"
+    "url": "https://github.com/reformlabs/qlit/issues"
   },
-  "homepage": "https://github.com/rewonsh/phrasesync#readme",
+  "homepage": "https://github.com/reformlabs/qlit#readme",
   "dependencies": {
-    "axios": "^1.6.8"
+    "axios": "^1.13.6",
+    "commander": "^14.0.3"
+  },
+  "devDependencies": {
+    "@types/boxen": "^2.1.0",
+    "@types/clipboardy": "^1.1.0",
+    "@types/dotenv": "^6.1.1",
+    "@types/node": "^25.5.0",
+    "@types/ora": "^3.1.0",
+    "boxen": "^5.1.2",
+    "chalk": "^4.1.2",
+    "clipboardy": "^2.3.0",
+    "dotenv": "^17.3.1",
+    "node-cache": "^5.1.2",
+    "ora": "^5.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }

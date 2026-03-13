@@ -1,0 +1,3 @@
+Merhaba.
+Bu bir test dosyasıdır.
+Qlit her şeyi çevirir.

@@ -1,48 +1,115 @@
-# Meet with PhraseSync
+<p align="center">
+  <img src="https://github.com/reformlabs/qlit/raw/main/assets/banner.png" alt="Qlit Banner">
+</p>
 
-A simple, online translation module for Node.js. Instantly translate text between languages using the LibreTranslate API.
+# Qlit by Reform Labs (@reform/qlit)
 
-## Features
-- Translate text between 20+ languages
-- Uses LibreTranslate API (no API key required for public instance)
-- No need to add or manage your own data
-- Simple async API
+Terminalden veya projelerinden hızlı, akıllı ve kesintisiz çeviri yapmanızı sağlayan açık kaynaklı bir kütüphane ve CLI aracı.
 
-## Installation
+> [!IMPORTANT]
+> Bu proje **Reform Labs** tarafından geliştirilmiştir. Kullanıcılar sistemi özgürce kullanabilir ve katkıda bulunabilir, ancak projenin mülkiyetini kendilerine aitmiş gibi göstererek paylaşamazlar.
+
+## Özellikler
+
+-   **DeepL Entegrasyonu**: API anahtarı eklendiğinde otomatik olarak yüksek kaliteli DeepL motoruna geçer.
+-   **i18n Desteği**: JSON/YAML yerelleştirme dosyalarını anahtarları koruyarak toplu çevirir.
+-   **Auto-Mirror (Kesintisiz Hizmet)**: 8+ farklı sunucu arasında otomatik geçiş yaparak "asla bozulmayan" bir deneyim sunar.
+-   **Akıllı Önbellek**: Aynı çeviriler için 5 dakika boyunca API isteği atmaz, hızı artırır.
+-   **Markdown Desteği**: `code`, **bold**, *italic* ve linkleri çeviri sırasında korur.
+-   **Dosya Çeviricisi**: Metin dosyalarını satır satır çevirir ve sonucu yeni bir dosyaya kaydeder.
+-   **Pipe (Boru) Desteği**: Unix pipe'larını destekler (örn: `cat logs.txt | qlit`).
+-   **Çoklu Hedef Dil**: Aynı metni aynı anda birden fazla dile çevirebilir (örn: `en,tr,de`).
+-   **İnteraktif Mod**: Sürekli çeviri yapmak için kalıcı bir shell oturumu açar.
+-   **JSON Çıktı**: Geliştiriciler için tüm teknik veriyi içeren temiz JSON çıktısı sağlar.
+-   **Gelişmiş CLI**: Ora spinner, Chalk renkleri ve Clipboard desteği ile premium deneyim.
+-   **Dual Support**: Hem TypeScript hem de JavaScript (ESM/CJS) projelerinde tam uyumluluk.
+
+## Kurulum
 
 ```bash
-npm install phrasesync
+npm install -g qlit
 ```
 
-## Usage
+## CLI Kullanımı
 
-```js
-const phrasesync = require('phrasesync');
+CLI dilini ve varsayılan hedef dili ayarlayarak başlayın:
 
-// Translate text from English to Turkish
-phrasesync.translate('Hello, how are you?', 'en', 'tr').then(console.log); // "Merhaba, nasılsın?"
-
-// Auto-detect source language
-phrasesync.translate('Guten Morgen!', undefined, 'en').then(console.log); // "Good morning!"
-
-// List supported languages
-phrasesync.getSupportedLanguages().then(console.log);
+```bash
+qlit config tr # CLI'yı Türkçe yapar ve varsayılan hedef dili TR olarak ayarlar
 ```
 
-## API
+### Temel Komutlar
 
-### `phrasesync.translate(text, from, to)`
-- `text` _(string)_: Text to translate
-- `from` _(string, optional)_: Source language code (e.g., 'en', 'tr', 'de', or 'auto')
-- `to` _(string)_: Target language code (e.g., 'en', 'tr', 'de')
-- **Returns:** `Promise<string>` translated text
+- **Hızlı Çeviri**: `qlit <metin>`  
+  Varsayılan dile anında çeviri yapar.  
+  *Örnek:* `qlit "Hello"`
 
-### `phrasesync.getSupportedLanguages()`
-- **Returns:** `Promise<Array<{code: string, name: string}>>` Supported languages
+- **Hedefli ve Çoklu Çeviri**: `qlit to <dil(ler)> <metin>`  
+  Belirli bir dile veya virgülle ayrılmış birden fazla dile çeviri yapar.  
+  *Örnek:* `qlit to tr,de "Hello"`
 
-## License
-MIT
+- **i18n Otomasyonu**: `qlit i18n <dosya> --to <dil>`  
+  JSON yerelleştirme dosyalarını anahtarları bozmadan çevirir.  
+  *Örnek:* `qlit i18n tr.json --to en`
+
+- **Dilleri Listele**: `qlit list`  
+  Desteklenen 130+ dili ve kodlarını görüntüler.
+
+- **Yapılandırma**: `qlit config <dil>`  
+  Varsayılan çeviri dilini ve CLI dilini kalıcı olarak ayarlar.
+
+### Gelişmiş Kullanım & Seçenekler
+
+- **Pipe Desteği**: `cat logs.txt | qlit to tr`  
+  Diğer komutlardan gelen çıktıları doğrudan çevirir.
+- **Dosya Çeviri**: `qlit to en -f readme.txt`  
+  Dosyayı okur ve `readme_en.txt` olarak kaydeder.
+- **İnteraktif Mod**: `qlit -i`  
+  Sürekli çeviri için hızlı bir shell açar.
+- **JSON Modu**: `qlit "Hello" --json`  
+  Tüm API verisini (telaffuz, tanımlar vb.) JSON olarak döner.
+- **Pano Desteği**: `--copy`  
+  Çeviri sonucunu otomatik olarak kopyalar.
+
+### Seçenek Listesi
+- `-c, --copy`: Sonucu panoya kopyalar.
+- `-j, --json`: Tam JSON çıktısı verir.
+- `-f, --file <yol>`: Dosya çevirisi yapar.
+- `-i, --interactive`: İnteraktif shell başlatır.
 
 ---
 
-> PhraseSync uses the LibreTranslate API (https://libretranslate.com/).
+## Kütüphane Olarak Kullanım
+
+### JavaScript / Node.js
+```javascript
+const qlit = require('qlit');
+
+async function test() {
+  // Çeviri
+  const res = await qlit.translate('Hello', 'en', 'tr');
+  console.log(res.translation); // "Merhaba"
+  console.log(res.engine);      // "lingva" veya "deepl"
+}
+```
+
+### TypeScript
+```typescript
+import qlit, { Language } from 'qlit';
+
+const res = await qlit.translate('Hello', 'en', 'tr');
+const langs: Language[] = await qlit.getLanguages();
+```
+
+## .env Yapılandırması (Opsiyonel)
+DeepL Pro/Free kullanmak isterseniz projenizin kök dizinine bir `.env` dosyası ekleyin:
+```env
+DEEPL_API_KEY=your_key_here
+```
+
+## Lisans ve Haklar
+
+Bu proje açık kaynaklıdır ancak mülkiyet hakları **Reform Labs**'a aittir. Kullanıcılar sistemi kullanabilir, ancak sistemi "kendi yapımı" gibi göstererek tekrar dağıtamazlar.
+
+---
+Made with ❤️ by **Reform Labs**

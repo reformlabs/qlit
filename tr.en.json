@@ -1,0 +1,11 @@
+{
+  "title": "Hello world",
+  "auth": {
+    "login": "Login",
+    "register": "Sign Up"
+  },
+  "buttons": [
+    "Send",
+    "Cancel"
+  ]
+}
