@@ -2,32 +2,39 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-const CONFIG_PATH = path.join(os.homedir(), '.qlitrc');
-
-export interface Config {
-  cliLang: string;
+export interface QlitConfig {
   defaultTargetLang: string;
+  cliLang: string;
 }
 
-const DEFAULT_CONFIG: Config = {
-  cliLang: 'en',
-  defaultTargetLang: 'en',
+const DEFAULT_CONFIG: QlitConfig = {
+  defaultTargetLang: 'tr',
+  cliLang: 'en'
 };
 
-export function getConfig(): Config {
-  if (!fs.existsSync(CONFIG_PATH)) {
-    return DEFAULT_CONFIG;
-  }
-  try {
-    const content = fs.readFileSync(CONFIG_PATH, 'utf-8');
-    return JSON.parse(content);
-  } catch {
-    return DEFAULT_CONFIG;
-  }
+/**
+ * Gets the configuration file path. 
+ * Can be overridden by QLIT_CONFIG_PATH environment variable.
+ */
+export function getConfigPath(): string {
+  return process.env.QLIT_CONFIG_PATH || path.join(os.homedir(), '.qlitrc');
 }
 
-export function setConfig(config: Partial<Config>): void {
+export function getConfig(): QlitConfig {
+  const configPath = getConfigPath();
+  if (fs.existsSync(configPath)) {
+    try {
+      return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch (e) {
+      return DEFAULT_CONFIG;
+    }
+  }
+  return DEFAULT_CONFIG;
+}
+
+export function setConfig(config: Partial<QlitConfig>): void {
+  const configPath = getConfigPath();
   const current = getConfig();
   const updated = { ...current, ...config };
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(updated, null, 2), 'utf-8');
+  fs.writeFileSync(configPath, JSON.stringify(updated, null, 2));
 }

@@ -1,0 +1,31 @@
+# Build artifacts
+dist/
+node_modules/
+
+# Source and config
+src/
+tsconfig.json
+.env
+.env.example
+.qlitrc
+
+# Examples and assets
+examples/
+assets/
+
+# Git metadata
+.git/
+.github/
+.gitignore
+.npmignore
+.npmrc
+
+# Logs and tests
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Mac OS files
+.DS_Store

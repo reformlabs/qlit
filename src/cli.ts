@@ -6,76 +6,55 @@ import clipboardy from 'clipboardy';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import { translate, getLanguages } from './index';
+import fg from 'fast-glob';
+import qlit, { getLanguages } from './index';
 import { getConfig, setConfig } from './config';
 
 const program = new Command();
 const config = getConfig();
 
-const translations: Record<string, any> = {
-  en: {
-    description: 'Translate text instantly from the terminal',
-    argText: 'Text to translate',
-    setLangDesc: 'Set default translation language and CLI language',
-    listDesc: 'List all supported languages',
-    toDesc: 'Translate to specific language(s) (comma separated for multiple)',
-    toArgLang: 'Language code(s) (e.g., tr or en,de,fr)',
-    toArgText: 'Text to translate',
-    errorNoText: 'Error: You must enter text to translate.',
-    errorPrefix: 'Error:',
-    configUpdated: 'Default language updated to:',
-    translating: 'Translating...',
-    fetchingLangs: 'Fetching languages...',
-    done: 'Done!',
-    copied: 'Result copied to clipboard!',
-    outputLabel: 'Output',
-    langsTitle: 'Supported Languages:',
-    interactiveTitle: 'Qlit Interactive Mode (Type "exit" to quit)',
-    interactivePrompt: '> ',
-    fileSaved: 'File saved:',
-    engineLabel: 'Engine',
-    i18nDesc: 'Translate JSON/YAML localization files',
-    i18nArgFile: 'JSON file to translate',
-  },
-  tr: {
-    description: 'Terminalden hemen çeviri yapın',
-    argText: 'Çevrilecek metin',
-    setLangDesc: 'Varsayılan çeviri dilini ve CLI dilini ayarlar',
-    listDesc: 'Desteklenen tüm dilleri listeler',
-    toDesc: 'Belirli dil(ler)e çeviri yapar (virgül ile ayırarak çoklu hedef seçilebilir)',
-    toArgLang: 'Dil kod(lar)ı (örn: tr veya en,de,fr)',
-    toArgText: 'Çevrilecek metin',
-    errorNoText: 'Hata: Çevrilecek metin girmelisiniz.',
-    errorPrefix: 'Hata:',
-    configUpdated: 'Varsayılan dil güncellendi:',
-    translating: 'Çevriliyor...',
-    fetchingLangs: 'Diller çekiliyor...',
-    done: 'Tamamlandı!',
-    copied: 'Sonuç panoya kopyalandı!',
-    outputLabel: 'Sonuç',
-    langsTitle: 'Desteklenen Diller:',
-    interactiveTitle: 'Qlit İnteraktif Mod (Çıkmak için "exit" yazın)',
-    interactivePrompt: '> ',
-    fileSaved: 'Dosya kaydedildi:',
-    engineLabel: 'Motor',
-    i18nDesc: 'JSON/YAML yerelleştirme dosyalarını çevirir',
-    i18nArgFile: 'Çevrilecek JSON dosyası',
+// Load package.json metadata
+let pkg: any = { version: '2.5.0', description: '' };
+try {
+  const pkgPath = path.join(__dirname, '..', 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   }
-};
+} catch (e) { }
+
+// Localization Loader
+function loadTranslations(lang: string) {
+  const possiblePaths = [
+    path.join(__dirname, 'locales', `${lang}.json`),
+    path.join(__dirname, '..', 'src', 'locales', `${lang}.json`),
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      try {
+        const content = fs.readFileSync(p, 'utf8');
+        return JSON.parse(content).translation;
+      } catch (e) { }
+    }
+  }
+  // Fallback to default if not found
+  return null;
+}
 
 const cliLang = config.cliLang || 'en';
-const t = translations[cliLang] || translations.en;
+const t = loadTranslations(cliLang) || loadTranslations('en') || {};
 
 program
-  .name('qlit')
-  .description(t.description)
-  .version('2.0.0');
+  .name(pkg.name || 'qlit')
+  .description(t.description || pkg.description)
+  .version(pkg.version);
 
 // Global Options
 program
   .option('-c, --copy', 'Copy result(s) to clipboard')
   .option('-j, --json', 'Output full JSON response')
   .option('-f, --file <path>', 'Translate a file content')
+  .option('--folder <path>', t.folderDesc)
   .option('-i, --interactive', 'Start interactive mode');
 
 // qlit to <lang> [text]
@@ -87,7 +66,12 @@ program
   .action(async (langsStr, text, _, cmd) => {
     const options = program.opts();
     const finalLangs = langsStr.split(',');
-    
+
+    if (options.folder) {
+      await translateFolder(options.folder, finalLangs);
+      return;
+    }
+
     if (options.file) {
       await translateFile(options.file, finalLangs);
       return;
@@ -149,13 +133,18 @@ program
       return;
     }
 
+    if (options.folder) {
+      await translateFolder(options.folder, [config.defaultTargetLang]);
+      return;
+    }
+
     if (options.file) {
       await translateFile(options.file, [config.defaultTargetLang]);
       return;
     }
 
     const inputText = text || (await readFromStdin());
-    
+
     // If no text, no pipe, and no other flag, show help
     if (!inputText && process.stdin.isTTY) {
       program.help();
@@ -163,8 +152,8 @@ program
     }
 
     if (!inputText) {
-       console.error(chalk.red(t.errorNoText));
-       process.exit(1);
+      console.error(chalk.red(t.errorNoText));
+      process.exit(1);
     }
 
     await performMultiTranslation(inputText, 'auto', [config.defaultTargetLang], options.copy, options.json);
@@ -172,7 +161,7 @@ program
 
 async function readFromStdin(): Promise<string | null> {
   if (process.stdin.isTTY) return null;
-  
+
   return new Promise((resolve) => {
     let data = '';
     process.stdin.setEncoding('utf8');
@@ -190,16 +179,16 @@ async function readFromStdin(): Promise<string | null> {
 
 async function performMultiTranslation(text: string, from: string, toLangs: string[], copy?: boolean, jsonMode?: boolean) {
   const translations_results: any[] = [];
-  
+
   for (const to of toLangs) {
     const spinner = !jsonMode ? ora(`${t.translating} [${to}]`).start() : null;
     try {
-      const result = await translate(text, from, to);
+      const result = await qlit.translate(text, from, to);
       const engineColor = result.engine === 'deepl' ? chalk.magenta : chalk.blue;
       const engineTag = ` [${engineColor(result.engine.toUpperCase())}]`;
 
       if (spinner) spinner.succeed(`${t.done} [${to}]${engineTag}`);
-      
+
       if (jsonMode) {
         translations_results.push({ lang: to, ...result });
       } else {
@@ -229,7 +218,7 @@ async function translateFile(filePath: string, toLangs: string[]) {
 
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split('\n');
-  
+
   for (const to of toLangs) {
     const spinner = ora(`${t.translating} file to [${to}]...`).start();
     try {
@@ -239,20 +228,36 @@ async function translateFile(filePath: string, toLangs: string[]) {
           translatedLines.push('');
           continue;
         }
-        const result = await translate(line, 'auto', to);
+        const result = await qlit.translate(line, 'auto', to);
         translatedLines.push(result.translation);
       }
-      
+
       const ext = path.extname(filePath);
       const base = path.basename(filePath, ext);
       const newPath = path.join(path.dirname(filePath), `${base}_${to}${ext}`);
-      
+
       fs.writeFileSync(newPath, translatedLines.join('\n'));
       spinner.succeed(`${t.done} [${to}]`);
       console.log(`${chalk.green('✔')} ${t.fileSaved} ${chalk.cyan(newPath)}`);
     } catch (error: any) {
-      spinner.fail(`${t.errorPrefix} [${to}] ${error.message}`);
+      if (spinner) spinner.fail(`${t.errorPrefix} [${to}] ${error.message}`);
     }
+  }
+}
+
+async function translateFolder(folderPath: string, toLangs: string[]) {
+  if (!fs.existsSync(folderPath) || !fs.lstatSync(folderPath).isDirectory()) {
+    console.error(chalk.red(`${t.errorPrefix} Folder not found: ${folderPath}`));
+    return;
+  }
+
+  const entries = await fg(['**/*'], { cwd: folderPath, absolute: true, onlyFiles: true });
+
+  for (const entry of entries) {
+    // Skip already translated files or non-text files based on some logic if needed
+    // For now, translate all
+    console.log(`${chalk.blue('Processing:')} ${path.basename(entry)}`);
+    await translateFile(entry, toLangs);
   }
 }
 
@@ -275,7 +280,7 @@ async function translateI18n(filePath: string, to: string) {
   try {
     const translateDeep = async (obj: any): Promise<any> => {
       if (typeof obj === 'string') {
-        const res = await translate(obj, 'auto', to);
+        const res = await qlit.translate(obj, 'auto', to);
         return res.translation;
       } else if (Array.isArray(obj)) {
         return Promise.all(obj.map(item => translateDeep(item)));
@@ -298,7 +303,7 @@ async function translateI18n(filePath: string, to: string) {
     spinner.succeed(`${t.done} [${to}]`);
     console.log(`${chalk.green('✔')} ${t.fileSaved} ${chalk.cyan(newPath)}`);
   } catch (error: any) {
-    spinner.fail(`${t.errorPrefix} [${to}] ${error.message}`);
+    if (spinner) spinner.fail(`${t.errorPrefix} [${to}] ${error.message}`);
   }
 }
 

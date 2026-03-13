@@ -1,0 +1,27 @@
+{
+  "translation": {
+    "description": "Terminalden hemen çeviri yapın",
+    "argText": "Çevrilecek metin",
+    "setLangDesc": "Varsayılan çeviri dilini ve CLI dilini ayarlar",
+    "listDesc": "Desteklenen tüm dilleri listeler",
+    "toDesc": "Belirli dil(ler)e çeviri yapar (virgül ile ayırarak çoklu hedef seçilebilir)",
+    "toArgLang": "Dil kod(lar)ı (örn: tr veya en,de,fr)",
+    "toArgText": "Çevrilecek metin",
+    "errorNoText": "Hata: Çevrilecek metin girmelisiniz.",
+    "errorPrefix": "Hata:",
+    "configUpdated": "Varsayılan dil güncellendi:",
+    "translating": "Çevriliyor...",
+    "fetchingLangs": "Diller çekiliyor...",
+    "done": "Tamamlandı!",
+    "copied": "Sonuç panoya kopyalandı!",
+    "outputLabel": "Sonuç",
+    "langsTitle": "Desteklenen Diller:",
+    "interactiveTitle": "Qlit İnteraktif Mod (Çıkmak için \"exit\" yazın)",
+    "interactivePrompt": "> ",
+    "fileSaved": "Dosya kaydedildi:",
+    "engineLabel": "Motor",
+    "i18nDesc": "JSON/YAML yerelleştirme dosyalarını çevirir",
+    "i18nArgFile": "Çevrilecek JSON dosyası",
+    "folderDesc": "Klasördeki tüm dosyaları çevirir"
+  }
+}

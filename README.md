@@ -59,6 +59,11 @@ qlit config tr
 
 * **Configuration**: `qlit config <language>`
   Permanently sets the default translation language and CLI language.
+  *(You can override the config path by setting the `QLIT_CONFIG_PATH` environment variable)*
+
+* **Folder Translation**: `qlit --folder <path> to <language>`
+  Translates all files within a folder recursively while maintaining the file structure.
+  *Example:* `qlit --folder ./locales to en`
 
 ### Advanced Usage & Options
 

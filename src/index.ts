@@ -1,9 +1,44 @@
-import axios from 'axios';
+import fetch from 'node-fetch';
 import NodeCache from 'node-cache';
-import * as dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables optionally
+try {
+  // Use a dynamic check to load dotenv only if present
+  const dotenv = require('dotenv');
+  dotenv.config();
+} catch (e) {
+  // dotenv not found or failed, which is fine for production
+}
+
+/**
+ * Supported Language Codes for Lingva
+ */
+export enum LanguageCode {
+  AUTO = 'auto',
+  ENGLISH = 'en',
+  TURKISH = 'tr',
+  GERMAN = 'de',
+  FRENCH = 'fr',
+  SPANISH = 'es',
+  ITALIAN = 'it',
+  PORTUGUESE = 'pt',
+  RUSSIAN = 'ru',
+  CHINESE_SIMPLIFIED = 'zh',
+  CHINESE_TRADITIONAL = 'zh-TW',
+  JAPANESE = 'ja',
+  KOREAN = 'ko',
+  ARABIC = 'ar',
+  DUTCH = 'nl',
+  POLISH = 'pl',
+  UKRAINIAN = 'uk',
+  GREEK = 'el',
+  HINDI = 'hi',
+  VIETNAMESE = 'vi',
+  INDONESIAN = 'id',
+  THAI = 'th',
+  AZERBAIJANI = 'az',
+  // ... can be expanded
+}
 
 export interface Language {
   code: string;
@@ -28,7 +63,14 @@ export interface AudioResponse {
   audio: number[];
 }
 
-const INSTANCES = [
+export interface QlitOptions {
+  instances?: string[];
+  deepLKey?: string;
+  cacheTTL?: number;
+  protectedRegexes?: RegExp[];
+}
+
+const DEFAULT_INSTANCES = [
   'https://lingva.ml',
   'https://translate.igna.wtf',
   'https://translate.plausibility.cloud',
@@ -39,15 +81,34 @@ const INSTANCES = [
   'https://translate.jae.fi'
 ];
 
+const DEFAULT_PROTECTED_Patterns = [
+  /(`{1,3})(.+?)\1/g, // code
+  /(\*\*|__)(.+?)\1/g, // bold
+  /(\*|_)(.+?)\1/g, // italic
+  /\[(.+?)\]\((.+?)\)/g // links
+];
+
 export class Qlit {
   private cache: NodeCache;
   private instances: string[];
   private deepLKey: string | undefined;
+  private protectedRegexes: RegExp[];
 
-  constructor(customInstances?: string[]) {
-    this.instances = customInstances || INSTANCES;
-    this.cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
-    this.deepLKey = process.env.DEEPL_API_KEY;
+  constructor(options: QlitOptions = {}) {
+    this.instances = options.instances || DEFAULT_INSTANCES;
+    this.cache = new NodeCache({ 
+      stdTTL: options.cacheTTL || 300, 
+      checkperiod: 60 
+    });
+    this.deepLKey = options.deepLKey || process.env.DEEPL_API_KEY;
+    this.protectedRegexes = options.protectedRegexes || DEFAULT_PROTECTED_Patterns;
+  }
+
+  /**
+   * Updates Markdown protection regexes.
+   */
+  public setProtectedRegexes(regexes: RegExp[]) {
+    this.protectedRegexes = regexes;
   }
 
   /**
@@ -57,16 +118,8 @@ export class Qlit {
     const map: Record<string, string> = {};
     let counter = 0;
     
-    // Protect code blocks, bold, italic, links, etc.
-    const patterns = [
-      /(`{1,3})(.+?)\1/g, // code
-      /(\*\*|__)(.+?)\1/g, // bold
-      /(\*|_)(.+?)\1/g, // italic
-      /\[(.+?)\]\((.+?)\)/g // links
-    ];
-
     let protectedText = text;
-    patterns.forEach(pattern => {
+    this.protectedRegexes.forEach(pattern => {
       protectedText = protectedText.replace(pattern, (match) => {
         const placeholder = `[[PROTECTED_${counter}]]`;
         map[placeholder] = match;
@@ -90,7 +143,7 @@ export class Qlit {
   }
 
   /**
-   * Translates text using DeepL API.
+   * Translates text using DeepL API with node-fetch.
    */
   private async translateDeepL(text: string, to: string): Promise<string> {
     if (!this.deepLKey) throw new Error('No DeepL API key');
@@ -98,29 +151,33 @@ export class Qlit {
     const isFree = this.deepLKey.endsWith(':fx');
     const baseUrl = isFree ? 'https://api-free.deepl.com/v2/translate' : 'https://api.deepl.com/v2/translate';
 
-    const response = await axios.post(
-      baseUrl,
-      new URLSearchParams({
-        text,
-        target_lang: to.toUpperCase(),
-        tag_handling: 'xml', // Help preserve some structure
-      }).toString(),
-      {
-        headers: {
-          'Authorization': `DeepL-Auth-Key ${this.deepLKey}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      }
-    );
+    const params = new URLSearchParams();
+    params.append('text', text);
+    params.append('target_lang', to.toUpperCase());
+    params.append('tag_handling', 'xml');
 
-    return response.data.translations[0].text;
+    const response = await fetch(baseUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `DeepL-Auth-Key ${this.deepLKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString()
+    });
+
+    if (!response.ok) {
+      throw new Error(`DeepL API Error: ${response.statusText}`);
+    }
+
+    const data: any = await response.json();
+    return data.translations[0].text;
   }
 
   /**
    * Translates text between languages with auto-mirror fallback and caching.
    * Prioritizes DeepL if DEEPL_API_KEY is available.
    */
-  async translate(text: string, from: string, to: string): Promise<TranslationResponse> {
+  async translate(text: string, from: string | LanguageCode, to: string | LanguageCode): Promise<TranslationResponse> {
     const cacheKey = `${from}:${to}:${text}`;
     const cached = this.cache.get<TranslationResponse>(cacheKey);
     if (cached) return cached;
@@ -140,8 +197,7 @@ export class Qlit {
         return result;
       } catch (err: any) {
         lastError = err;
-        // Fallback to Lingva if DeepL fails (unless it's an auth error)
-        if (err.response?.status === 403) {
+        if (err.message?.includes('403')) {
            console.error('DeepL Auth Error: Using Lingva fallbacks.');
         }
       }
@@ -151,19 +207,25 @@ export class Qlit {
     for (const baseUrl of this.instances) {
       try {
         const url = `${baseUrl.replace(/\/$/, '')}/api/v1/${from}/${to}/${encodeURIComponent(protectedText)}`;
-        const response = await axios.get<any>(url, { timeout: 5000 });
+        const response = await fetch(url, { timeout: 5000 });
         
+        if (!response.ok) {
+          if (response.status === 429 || response.status >= 500) continue;
+          throw new Error(`Lingva Error: ${response.statusText}`);
+        }
+
+        const data: any = await response.json();
         let result: TranslationResponse = {
-          translation: this.restoreMarkdown(response.data.translation, map),
+          translation: this.restoreMarkdown(data.translation, map),
           engine: 'lingva',
-          info: response.data.info
+          info: data.info
         };
         
         this.cache.set(cacheKey, result);
         return result;
       } catch (error: any) {
         lastError = error;
-        if (error.response?.status === 429 || error.response?.status >= 500 || error.code === 'ECONNABORTED') {
+        if (error.name === 'FetchError' || error.code === 'ECONNABORTED') {
           continue;
         }
         throw error;
@@ -176,19 +238,23 @@ export class Qlit {
   /**
    * Gets the audio for a given text in a specific language.
    */
-  async getAudio(lang: string, text: string): Promise<Uint8Array> {
+  async getAudio(lang: string | LanguageCode, text: string): Promise<Uint8Array> {
     let lastError: any;
     for (const baseUrl of this.instances) {
       try {
         const url = `${baseUrl.replace(/\/$/, '')}/api/v1/audio/${lang}/${encodeURIComponent(text)}`;
-        const response = await axios.get<AudioResponse>(url, { timeout: 5000 });
-        return new Uint8Array(response.data.audio);
+        const response = await fetch(url, { timeout: 5000 });
+        
+        if (!response.ok) {
+          if (response.status === 429 || response.status >= 500) continue;
+          throw new Error(`Audio Error: ${response.statusText}`);
+        }
+
+        const data: any = await response.json();
+        return new Uint8Array(data.audio);
       } catch (error: any) {
         lastError = error;
-        if (error.response?.status === 429 || error.response?.status >= 500 || error.code === 'ECONNABORTED') {
-          continue;
-        }
-        throw error;
+        continue;
       }
     }
     throw lastError || new Error('All mirrors failed');
@@ -203,14 +269,15 @@ export class Qlit {
       try {
         let url = `${baseUrl.replace(/\/$/, '')}/api/v1/languages`;
         if (type) url += `?type=${type}`;
-        const response = await axios.get<{ languages: Language[] }>(url, { timeout: 5000 });
-        return response.data.languages;
+        
+        const response = await fetch(url, { timeout: 5000 });
+        if (!response.ok) continue;
+
+        const data: any = await response.json();
+        return data.languages;
       } catch (error: any) {
         lastError = error;
-        if (error.response?.status === 429 || error.response?.status >= 500 || error.code === 'ECONNABORTED') {
-          continue;
-        }
-        throw error;
+        continue;
       }
     }
     throw lastError || new Error('All mirrors failed');
@@ -219,8 +286,8 @@ export class Qlit {
 
 const defaultQlit = new Qlit();
 
-export const translate = (text: string, from: string, to: string) => defaultQlit.translate(text, from, to);
-export const getAudio = (lang: string, text: string) => defaultQlit.getAudio(lang, text);
+export const translate = (text: string, from: string | LanguageCode, to: string | LanguageCode) => defaultQlit.translate(text, from, to);
+export const getAudio = (lang: string | LanguageCode, text: string) => defaultQlit.getAudio(lang, text);
 export const getLanguages = (type?: 'source' | 'target') => defaultQlit.getLanguages(type);
 
 export default defaultQlit;

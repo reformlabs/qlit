@@ -1,0 +1,27 @@
+{
+  "translation": {
+    "description": "Translate text instantly from the terminal",
+    "argText": "Text to translate",
+    "setLangDesc": "Set default translation language and CLI language",
+    "listDesc": "List all supported languages",
+    "toDesc": "Translate to specific language(s) (comma separated for multiple)",
+    "toArgLang": "Language code(s) (e.g., tr or en,de,fr)",
+    "toArgText": "Text to translate",
+    "errorNoText": "Error: You must enter text to translate.",
+    "errorPrefix": "Error:",
+    "configUpdated": "Default language updated to:",
+    "translating": "Translating...",
+    "fetchingLangs": "Fetching languages...",
+    "done": "Done!",
+    "copied": "Result copied to clipboard!",
+    "outputLabel": "Output",
+    "langsTitle": "Supported Languages:",
+    "interactiveTitle": "Qlit Interactive Mode (Type \"exit\" to quit)",
+    "interactivePrompt": "> ",
+    "fileSaved": "File saved:",
+    "engineLabel": "Engine",
+    "i18nDesc": "Translate JSON/YAML localization files",
+    "i18nArgFile": "JSON file to translate",
+    "folderDesc": "Translate all files in a folder"
+  }
+}

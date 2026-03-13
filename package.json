@@ -1,6 +1,6 @@
 {
   "name": "@reformlabs/qlit",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Terminalden hemen çeviri yapın - Lingva REST API powered translator",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,7 +8,7 @@
     "qlit": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/locales dist/ || xcopy /E /I src\\locales dist\\locales",
     "start": "node dist/cli.js",
     "dev": "ts-node src/cli.ts",
     "prepare": "npm run build"
@@ -21,9 +21,11 @@
     "translator",
     "typescript",
     "open source",
-    "javascript"
+    "javascript",
+    "i18n",
+    "deepl"
   ],
-  "author": "Reform Labs, @costiqiel, @manymq, @vrdons",
+  "author": "Reform Labs",
   "license": "RFLS-1.0",
   "repository": {
     "type": "git",
@@ -34,21 +36,21 @@
   },
   "homepage": "https://github.com/reformlabs/qlit#readme",
   "dependencies": {
-    "axios": "^1.13.6",
-    "commander": "^14.0.3"
-  },
-  "devDependencies": {
-    "@types/boxen": "^2.1.0",
-    "@types/clipboardy": "^1.1.0",
-    "@types/dotenv": "^6.1.1",
-    "@types/node": "^25.5.0",
-    "@types/ora": "^3.1.0",
-    "boxen": "^5.1.2",
     "chalk": "^4.1.2",
     "clipboardy": "^2.3.0",
-    "dotenv": "^17.3.1",
+    "commander": "^14.0.3",
+    "fast-glob": "^3.3.3",
     "node-cache": "^5.1.2",
-    "ora": "^5.4.1",
+    "node-fetch": "^2.7.0",
+    "ora": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^6.1.1",
+    "@types/node": "^25.5.0",
+    "@types/node-fetch": "^2.6.12",
+    "@types/ora": "^3.1.0",
+    "@types/clipboardy": "^1.1.0",
+    "dotenv": "^17.3.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
