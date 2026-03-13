@@ -1,6 +1,6 @@
 {
   "name": "@reformlabs/qlit",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Terminalden hemen çeviri yapın - Lingva REST API powered translator",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
