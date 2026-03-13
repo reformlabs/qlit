@@ -1,21 +1,28 @@
-MIT License
+RFLS-1.0 (Reform Labs Open License)
+--------------------------------
 
-Copyright (c) 2025 rewon
+**Copyright (c) 2026 Reform Labs (also known as Reframed Team)**
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+### 1\. Scope of License
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This license applies **exclusively to works published by Reform Labs (also referred to as Reframed Team)** and explicitly marked as licensed under **RFLS-1.0**.
+
+No other individual, organization, group, or project is permitted to publish new works under the RFLS-1.0 license.
+
+### 2\. Attribution
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+### 3\. Name and Trademark Restriction
+
+The names **"Reform"**, **"Reform Labs"**, **“Reframed”**, **“Reframed Org”**, and **“Reframed Team”** are reserved identifiers of Reform Labs.
+
+Derivative works, forks, modifications, or redistributed versions of the Software **may not use** these names, or any confusingly similar names, in the project name, organization name, branding, marketing, or promotional materials, **without explicit prior written permission from Reframed Org**.
+
+This restriction does not limit factual attribution but strictly prohibits implying endorsement, affiliation, or origin.
+
+### 4\. Disclaimer of Warranty
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OROTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
