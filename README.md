@@ -2,98 +2,107 @@
   <img src="https://github.com/reformlabs/qlit/raw/main/assets/banner.png" alt="Qlit Banner">
 </p>
 
-# Qlit by Reform Labs (@reform/qlit)
+# Qlit by Reform Labs (@reformlabs/qlit)
 
-Terminalden veya projelerinden hızlı, akıllı ve kesintisiz çeviri yapmanızı sağlayan açık kaynaklı bir kütüphane ve CLI aracı.
+An open-source library and CLI tool that enables fast, smart, and seamless translation directly from your terminal or projects.
 
 > [!IMPORTANT]
-> Bu proje **Reform Labs** tarafından geliştirilmiştir. Kullanıcılar sistemi özgürce kullanabilir ve katkıda bulunabilir, ancak projenin mülkiyetini kendilerine aitmiş gibi göstererek paylaşamazlar.
+> This project is developed by **Reform Labs**. Users are free to use the system and contribute, but they may not redistribute it by claiming ownership as if it were their own project.
 
-## Özellikler
+## Features
 
--   **DeepL Entegrasyonu**: API anahtarı eklendiğinde otomatik olarak yüksek kaliteli DeepL motoruna geçer.
--   **i18n Desteği**: JSON/YAML yerelleştirme dosyalarını anahtarları koruyarak toplu çevirir.
--   **Auto-Mirror (Kesintisiz Hizmet)**: 8+ farklı sunucu arasında otomatik geçiş yaparak "asla bozulmayan" bir deneyim sunar.
--   **Akıllı Önbellek**: Aynı çeviriler için 5 dakika boyunca API isteği atmaz, hızı artırır.
--   **Markdown Desteği**: `code`, **bold**, *italic* ve linkleri çeviri sırasında korur.
--   **Dosya Çeviricisi**: Metin dosyalarını satır satır çevirir ve sonucu yeni bir dosyaya kaydeder.
--   **Pipe (Boru) Desteği**: Unix pipe'larını destekler (örn: `cat logs.txt | qlit`).
--   **Çoklu Hedef Dil**: Aynı metni aynı anda birden fazla dile çevirebilir (örn: `en,tr,de`).
--   **İnteraktif Mod**: Sürekli çeviri yapmak için kalıcı bir shell oturumu açar.
--   **JSON Çıktı**: Geliştiriciler için tüm teknik veriyi içeren temiz JSON çıktısı sağlar.
--   **Gelişmiş CLI**: Ora spinner, Chalk renkleri ve Clipboard desteği ile premium deneyim.
--   **Dual Support**: Hem TypeScript hem de JavaScript (ESM/CJS) projelerinde tam uyumluluk.
+* **DeepL Integration**: Automatically switches to the high-quality DeepL engine when an API key is provided.
+* **i18n Support**: Bulk translates JSON/YAML localization files while preserving their keys.
+* **Auto-Mirror (Uninterrupted Service)**: Automatically switches between 8+ different servers to provide an “always-working” experience.
+* **Smart Cache**: Avoids sending API requests for identical translations for 5 minutes, improving speed.
+* **Markdown Support**: Preserves `code`, **bold**, *italic*, and links during translation.
+* **File Translator**: Translates text files line-by-line and saves the result as a new file.
+* **Pipe Support**: Supports Unix pipes (e.g., `cat logs.txt | qlit`).
+* **Multiple Target Languages**: Translate the same text into multiple languages at once (e.g., `en,tr,de`).
+* **Interactive Mode**: Opens a persistent shell session for continuous translation.
+* **JSON Output**: Provides clean JSON output containing all technical data for developers.
+* **Advanced CLI**: Premium CLI experience with Ora spinner, Chalk colors, and clipboard support.
+* **Dual Support**: Fully compatible with both TypeScript and JavaScript (ESM/CJS) projects.
 
-## Kurulum
+## Installation
 
 ```bash
 npm install -g qlit
 ```
 
-## CLI Kullanımı
+## CLI Usage
 
-CLI dilini ve varsayılan hedef dili ayarlayarak başlayın:
+Start by configuring the CLI language and the default target language:
 
 ```bash
-qlit config tr # CLI'yı Türkçe yapar ve varsayılan hedef dili TR olarak ayarlar
+qlit config tr
 ```
 
-### Temel Komutlar
+*(Sets the CLI language to Turkish and the default target language to TR.)*
 
-- **Hızlı Çeviri**: `qlit <metin>`  
-  Varsayılan dile anında çeviri yapar.  
-  *Örnek:* `qlit "Hello"`
+### Basic Commands
 
-- **Hedefli ve Çoklu Çeviri**: `qlit to <dil(ler)> <metin>`  
-  Belirli bir dile veya virgülle ayrılmış birden fazla dile çeviri yapar.  
-  *Örnek:* `qlit to tr,de "Hello"`
+* **Quick Translation**: `qlit <text>`
+  Instantly translates to the default language.
+  *Example:* `qlit "Hello"`
 
-- **i18n Otomasyonu**: `qlit i18n <dosya> --to <dil>`  
-  JSON yerelleştirme dosyalarını anahtarları bozmadan çevirir.  
-  *Örnek:* `qlit i18n tr.json --to en`
+* **Targeted & Multi Translation**: `qlit to <language(s)> <text>`
+  Translates into a specific language or multiple languages separated by commas.
+  *Example:* `qlit to tr,de "Hello"`
 
-- **Dilleri Listele**: `qlit list`  
-  Desteklenen 130+ dili ve kodlarını görüntüler.
+* **i18n Automation**: `qlit i18n <file> --to <language>`
+  Translates JSON localization files without breaking their keys.
+  *Example:* `qlit i18n tr.json --to en`
 
-- **Yapılandırma**: `qlit config <dil>`  
-  Varsayılan çeviri dilini ve CLI dilini kalıcı olarak ayarlar.
+* **List Languages**: `qlit list`
+  Displays 130+ supported languages and their codes.
 
-### Gelişmiş Kullanım & Seçenekler
+* **Configuration**: `qlit config <language>`
+  Permanently sets the default translation language and CLI language.
 
-- **Pipe Desteği**: `cat logs.txt | qlit to tr`  
-  Diğer komutlardan gelen çıktıları doğrudan çevirir.
-- **Dosya Çeviri**: `qlit to en -f readme.txt`  
-  Dosyayı okur ve `readme_en.txt` olarak kaydeder.
-- **İnteraktif Mod**: `qlit -i`  
-  Sürekli çeviri için hızlı bir shell açar.
-- **JSON Modu**: `qlit "Hello" --json`  
-  Tüm API verisini (telaffuz, tanımlar vb.) JSON olarak döner.
-- **Pano Desteği**: `--copy`  
-  Çeviri sonucunu otomatik olarak kopyalar.
+### Advanced Usage & Options
 
-### Seçenek Listesi
-- `-c, --copy`: Sonucu panoya kopyalar.
-- `-j, --json`: Tam JSON çıktısı verir.
-- `-f, --file <yol>`: Dosya çevirisi yapar.
-- `-i, --interactive`: İnteraktif shell başlatır.
+* **Pipe Support**: `cat logs.txt | qlit to tr`
+  Translates outputs coming from other commands directly.
+
+* **File Translation**: `qlit to en -f readme.txt`
+  Reads a file and saves the result as `readme_en.txt`.
+
+* **Interactive Mode**: `qlit -i`
+  Opens a fast shell for continuous translations.
+
+* **JSON Mode**: `qlit "Hello" --json`
+  Returns full API data (pronunciation, definitions, etc.) as JSON.
+
+* **Clipboard Support**: `--copy`
+  Automatically copies the translation result to the clipboard.
+
+### Options List
+
+* `-c, --copy`: Copies the result to the clipboard.
+* `-j, --json`: Returns full JSON output.
+* `-f, --file <path>`: Performs file translation.
+* `-i, --interactive`: Starts an interactive shell.
 
 ---
 
-## Kütüphane Olarak Kullanım
+## Using as a Library
 
 ### JavaScript / Node.js
+
 ```javascript
 const qlit = require('qlit');
 
 async function test() {
-  // Çeviri
+  // Translation
   const res = await qlit.translate('Hello', 'en', 'tr');
   console.log(res.translation); // "Merhaba"
-  console.log(res.engine);      // "lingva" veya "deepl"
+  console.log(res.engine);      // "lingva" or "deepl"
 }
 ```
 
 ### TypeScript
+
 ```typescript
 import qlit, { Language } from 'qlit';
 
@@ -101,15 +110,18 @@ const res = await qlit.translate('Hello', 'en', 'tr');
 const langs: Language[] = await qlit.getLanguages();
 ```
 
-## .env Yapılandırması (Opsiyonel)
-DeepL Pro/Free kullanmak isterseniz projenizin kök dizinine bir `.env` dosyası ekleyin:
+## .env Configuration (Optional)
+
+If you want to use DeepL Pro/Free, add a `.env` file to the root directory of your project:
+
 ```env
 DEEPL_API_KEY=your_key_here
 ```
 
-## Lisans ve Haklar
+## License and Rights
 
-Bu proje açık kaynaklıdır ancak mülkiyet hakları **Reform Labs**'a aittir. Kullanıcılar sistemi kullanabilir, ancak sistemi "kendi yapımı" gibi göstererek tekrar dağıtamazlar.
+This project is open source, but the ownership rights belong to **Reform Labs**. Users may use the system, but they may not redistribute it by presenting it as their own work.
 
 ---
+
 Made with ❤️ by **Reform Labs**
