@@ -24,7 +24,7 @@
     "javascript"
   ],
   "author": "Reform Labs, @costiqiel, @manymq, @vrdons",
-  "license": "MIT",
+  "license": "RFLS-1.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/reformlabs/qlit.git"
