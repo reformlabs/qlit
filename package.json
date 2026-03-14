@@ -1,6 +1,6 @@
 {
   "name": "@reformlabs/qlit",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "High-performance CLI translator and i18n automation tool with DeepL integration, parallel processing, and auto-generated localization.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

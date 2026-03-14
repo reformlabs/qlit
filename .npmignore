@@ -1,5 +1,4 @@
 # Build artifacts
-dist/
 node_modules/
 
 # Source and config
