@@ -22,6 +22,11 @@
     "engineLabel": "Engine",
     "i18nDesc": "Translate JSON/YAML localization files",
     "i18nArgFile": "JSON file to translate",
-    "folderDesc": "Translate all files in a folder"
+    "folderDesc": "Translate all files in a folder",
+    "scanDesc": "Scan project for hardcoded strings and generate translation file",
+    "scanArgDir": "Directory to scan (e.g., ./src)",
+    "scanScanning": "Scanning files...",
+    "scanFound": "Found %d unique strings",
+    "scanSaving": "Saving translation to:"
   }
 }

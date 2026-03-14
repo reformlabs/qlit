@@ -12,6 +12,7 @@ An open-source library and CLI tool that enables fast, smart, and seamless trans
 ## Features
 
 * **DeepL Integration**: Automatically switches to the high-quality DeepL engine when an API key is provided.
+* **Auto-i18n Generator**: Scans your source code for hardcoded strings and generates a translated JSON file instantly.
 * **i18n Support**: Bulk translates JSON/YAML localization files while preserving their keys.
 * **Auto-Mirror (Uninterrupted Service)**: Automatically switches between 8+ different servers to provide an “always-working” experience.
 * **Smart Cache**: Avoids sending API requests for identical translations for 5 minutes, improving speed.
@@ -53,6 +54,10 @@ qlit config tr
 * **i18n Automation**: `qlit i18n <file> --to <language>`
   Translates JSON localization files without breaking their keys.
   *Example:* `qlit i18n tr.json --to en`
+
+* **Scan & Translate (Auto-Generator)**: `qlit scan <dir> --to <language>`
+  Scans your project (js, ts, py, etc.) for hardcoded strings and creates a ready-to-use translation file.
+  *Example:* `qlit scan ./src --to tr`
 
 * **List Languages**: `qlit list`
   Displays 130+ supported languages and their codes.

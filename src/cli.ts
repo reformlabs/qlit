@@ -112,6 +112,17 @@ program
     }
   });
 
+// qlit scan <dir> --to <lang>
+program
+  .command('scan')
+  .description(t.scanDesc)
+  .argument('<dir>', t.scanArgDir)
+  .requiredOption('--to <lang>', 'Target language')
+  .option('-o, --output <file>', 'Output JSON file', 'translations.json')
+  .action(async (dir, options) => {
+    await runScanner(dir, options.to, options.output);
+  });
+
 // qlit config <lang>
 program
   .command('config')
@@ -331,6 +342,79 @@ function startInteractiveMode() {
   }).on('close', () => {
     process.exit(0);
   });
+}
+
+async function runScanner(dirPath: string, to: string, outputPath: string) {
+  if (!fs.existsSync(dirPath) || !fs.lstatSync(dirPath).isDirectory()) {
+    console.error(chalk.red(`${t.errorPrefix} Directory not found: ${dirPath}`));
+    return;
+  }
+
+  const spinner = ora(t.scanScanning).start();
+  
+  // Find files to scan
+  const entries = await fg(['**/*.{js,ts,py,html,json,yaml,yml,md}'], {
+    cwd: dirPath,
+    absolute: true,
+    onlyFiles: true,
+    ignore: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/package-lock.json']
+  });
+
+  const strings = new Set<string>();
+  const stringRegex = /(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`)/g;
+
+  for (const entry of entries) {
+    try {
+      const content = fs.readFileSync(entry, 'utf8');
+      let match;
+      while ((match = stringRegex.exec(content)) !== null) {
+        const val = match[1] || match[2] || match[3];
+        if (val && val.length > 2 && val.length < 100) {
+          // Filter common programming characters/noise
+          if (/^[a-zA-Z\s\d,.\-!?]+$/.test(val) && !/^\d+$/.test(val)) {
+            strings.add(val.trim());
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  spinner.succeed(t.scanFound.replace('%d', strings.size.toString()));
+
+  const translations: Record<string, string> = {};
+  const total = strings.size;
+  let current = 0;
+
+  const translationSpinner = ora(`${t.translating} (0/${total})`).start();
+
+  for (const str of Array.from(strings)) {
+    current++;
+    translationSpinner.text = `${t.translating} (${current}/${total})`;
+    try {
+      const res = await qlit.translate(str, 'auto', to);
+      const key = generateKey(str);
+      translations[key] = res.translation;
+    } catch (e) {
+      // In case of error, just use string placeholder
+      const key = generateKey(str);
+      translations[key] = str;
+    }
+  }
+
+  translationSpinner.succeed(t.done);
+  
+  const finalJson = { translation: translations };
+  fs.writeFileSync(outputPath, JSON.stringify(finalJson, null, 2));
+  console.log(`${chalk.green('✔')} ${t.scanSaving} ${chalk.cyan(outputPath)}`);
+}
+
+function generateKey(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .slice(0, 30);
 }
 
 program.parse();

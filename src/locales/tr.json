@@ -22,6 +22,11 @@
     "engineLabel": "Motor",
     "i18nDesc": "JSON/YAML yerelleştirme dosyalarını çevirir",
     "i18nArgFile": "Çevrilecek JSON dosyası",
-    "folderDesc": "Klasördeki tüm dosyaları çevirir"
+    "folderDesc": "Klasördeki tüm dosyaları çevirir",
+    "scanDesc": "Projeyi tarar ve sert kodlanmış metinleri bulup çeviri dosyası oluşturur",
+    "scanArgDir": "Taranacak klasör (örn: ./src)",
+    "scanScanning": "Dosyalar taranıyor...",
+    "scanFound": "%d benzersiz metin bulundu",
+    "scanSaving": "Çeviri şuraya kaydediliyor:"
   }
 }
