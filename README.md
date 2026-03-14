@@ -4,26 +4,21 @@
 
 # Qlit by Reform Labs (@reformlabs/qlit)
 
-An open-source library and CLI tool that enables fast, smart, and seamless translation directly from your terminal or projects.
+High-performance CLI translator and i18n automation tool with DeepL integration, parallel processing, and auto-generated localization.
 
 > [!IMPORTANT]
 > This project is developed by **Reform Labs**. Users are free to use the system and contribute, but they may not redistribute it by claiming ownership as if it were their own project.
 
-## Features
-
 * **DeepL Integration**: Automatically switches to the high-quality DeepL engine when an API key is provided.
-* **Auto-i18n Generator**: Scans your source code for hardcoded strings and generates a translated JSON file instantly.
+* **Aggressive Parallelization**: Translates multiple strings concurrently using mirror rotation and high-performance worker pools (v2.8.0+).
+* **Batch & Deduplication**: Sends batch requests (DeepL) and deduplicates identical strings to reduce network overhead and increase speed.
+* **Auto-i18n Generator**: Scans your source code (`.js`, `.ts`, `.py`, `.html`, etc.) for hardcoded strings and generates a translated JSON file instantly.
 * **i18n Support**: Bulk translates JSON/YAML localization files while preserving their keys.
 * **Auto-Mirror (Uninterrupted Service)**: Automatically switches between 8+ different servers to provide an “always-working” experience.
 * **Smart Cache**: Avoids sending API requests for identical translations for 5 minutes, improving speed.
 * **Markdown Support**: Preserves `code`, **bold**, *italic*, and links during translation.
-* **File Translator**: Translates text files line-by-line and saves the result as a new file.
-* **Pipe Support**: Supports Unix pipes (e.g., `cat logs.txt | qlit`).
-* **Multiple Target Languages**: Translate the same text into multiple languages at once (e.g., `en,tr,de`).
-* **Interactive Mode**: Opens a persistent shell session for continuous translation.
-* **JSON Output**: Provides clean JSON output containing all technical data for developers.
-* **Advanced CLI**: Premium CLI experience with Ora spinner, Chalk colors, and clipboard support.
-* **Dual Support**: Fully compatible with both TypeScript and JavaScript (ESM/CJS) projects.
+* **File Translator**: Translates text files line-by-line using batch processing.
+* **Professional CLI**: Features Ora spinners, Chalk colors, clipboard support, and clean outputs (silenced third-party logs).
 
 ## Installation
 
@@ -104,10 +99,10 @@ qlit config tr
 const qlit = require('qlit');
 
 async function test() {
-  // Translation
-  const res = await qlit.translate('Hello', 'en', 'tr');
-  console.log(res.translation); // "Merhaba"
-  console.log(res.engine);      // "lingva" or "deepl"
+  // Batch Translation
+  const list = ['Hello', 'World'];
+  const results = await qlit.translateBatch(list, 'en', 'tr');
+  console.log(results[0].translation); // "Merhaba"
 }
 ```
 
