@@ -1,6 +1,6 @@
 {
   "name": "@reformlabs/qlit",
-  "version": "2.9.0",
+  "version": "3.0.0",
   "description": "High-performance CLI translator and i18n automation tool with DeepL integration, parallel processing, and auto-generated localization.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,8 @@
     "build": "tsc && cp -r src/locales dist/ || xcopy /E /I src\\locales dist\\locales",
     "start": "node dist/cli.js",
     "dev": "ts-node src/cli.ts",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "qlit",

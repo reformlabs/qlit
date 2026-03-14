@@ -82,7 +82,12 @@ const DEFAULT_INSTANCES = [
   'https://translate.projectsegfau.lt',
   'https://translate.dr460nf1r3.org',
   'https://lingva.garudalinux.org',
-  'https://translate.jae.fi'
+  'https://translate.jae.fi',
+  'https://translate.terraprint.co',
+  'https://translate.riverside.rocks',
+  'https://translate.bus-hit.me',
+  'https://lingva.pussthecat.org',
+  'https://translate.woodland.cafe'
 ];
 
 const DEFAULT_PROTECTED_Patterns = [

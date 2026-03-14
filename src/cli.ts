@@ -55,7 +55,8 @@ program
   .option('-j, --json', 'Output full JSON response')
   .option('-f, --file <path>', 'Translate a file content')
   .option('--folder <path>', t.folderDesc)
-  .option('-i, --interactive', 'Start interactive mode');
+  .option('-i, --interactive', 'Start interactive mode')
+  .option('-p, --parallel <n>', 'Concurrency limit for batch translation', '30');
 
 // qlit to <lang> [text]
 program
@@ -233,8 +234,9 @@ async function translateFile(filePath: string, toLangs: string[]) {
   
   for (const to of toLangs) {
     const spinner = ora(`${t.translating} file [${path.basename(filePath)}] to [${to}]...`).start();
+    const concurrency = parseInt(program.opts().parallel) || 30;
     try {
-      const results = await qlit.translateBatch(nonEmptyLines, 'auto', to, 20);
+      const results = await qlit.translateBatch(nonEmptyLines, 'auto', to, concurrency);
       
       let resIdx = 0;
       const translatedLines = lines.map(line => {
@@ -298,7 +300,8 @@ async function translateI18n(filePath: string, to: string) {
     };
     
     collectStrings(data);
-    const translatedStrings = await qlit.translateBatch(strings, 'auto', to, 20);
+    const concurrency = parseInt(program.opts().parallel) || 30;
+    const translatedStrings = await qlit.translateBatch(strings, 'auto', to, concurrency);
     
     let currentIdx = 0;
     const applyTranslations = (obj: any): any => {
@@ -395,9 +398,10 @@ async function runScanner(dirPath: string, to: string, outputPath: string) {
 
   const translations: Record<string, string> = {};
   const translationSpinner = ora(`${t.translating} (${strings.length} keys)...`).start();
+  const concurrency = parseInt(program.opts().parallel) || 30;
 
   try {
-    const results = await qlit.translateBatch(strings, 'auto', to, 20);
+    const results = await qlit.translateBatch(strings, 'auto', to, concurrency);
     results.forEach((res, i) => {
       const key = generateKey(strings[i]);
       translations[key] = res.translation;
