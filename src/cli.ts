@@ -229,24 +229,23 @@ async function translateFile(filePath: string, toLangs: string[]) {
 
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split('\n');
-
+  const nonEmptyLines = lines.filter(l => l.trim() !== '');
+  
   for (const to of toLangs) {
-    const spinner = ora(`${t.translating} file to [${to}]...`).start();
+    const spinner = ora(`${t.translating} file [${path.basename(filePath)}] to [${to}]...`).start();
     try {
-      const translatedLines = [];
-      for (const line of lines) {
-        if (line.trim() === '') {
-          translatedLines.push('');
-          continue;
-        }
-        const result = await qlit.translate(line, 'auto', to);
-        translatedLines.push(result.translation);
-      }
-
+      const results = await qlit.translateBatch(nonEmptyLines, 'auto', to);
+      
+      let resIdx = 0;
+      const translatedLines = lines.map(line => {
+        if (line.trim() === '') return '';
+        return results[resIdx++].translation;
+      });
+      
       const ext = path.extname(filePath);
       const base = path.basename(filePath, ext);
       const newPath = path.join(path.dirname(filePath), `${base}_${to}${ext}`);
-
+      
       fs.writeFileSync(newPath, translatedLines.join('\n'));
       spinner.succeed(`${t.done} [${to}]`);
       console.log(`${chalk.green('✔')} ${t.fileSaved} ${chalk.cyan(newPath)}`);
@@ -263,10 +262,8 @@ async function translateFolder(folderPath: string, toLangs: string[]) {
   }
 
   const entries = await fg(['**/*'], { cwd: folderPath, absolute: true, onlyFiles: true });
-
+  
   for (const entry of entries) {
-    // Skip already translated files or non-text files based on some logic if needed
-    // For now, translate all
     console.log(`${chalk.blue('Processing:')} ${path.basename(entry)}`);
     await translateFile(entry, toLangs);
   }
@@ -289,23 +286,37 @@ async function translateI18n(filePath: string, to: string) {
 
   const spinner = ora(`${t.translating} i18n file to [${to}]...`).start();
   try {
-    const translateDeep = async (obj: any): Promise<any> => {
+    const strings: string[] = [];
+    const collectStrings = (obj: any) => {
       if (typeof obj === 'string') {
-        const res = await qlit.translate(obj, 'auto', to);
-        return res.translation;
+        strings.push(obj);
       } else if (Array.isArray(obj)) {
-        return Promise.all(obj.map(item => translateDeep(item)));
+        obj.forEach(collectStrings);
+      } else if (typeof obj === 'object' && obj !== null) {
+        Object.values(obj).forEach(collectStrings);
+      }
+    };
+    
+    collectStrings(data);
+    const translatedStrings = await qlit.translateBatch(strings, 'auto', to);
+    
+    let currentIdx = 0;
+    const applyTranslations = (obj: any): any => {
+      if (typeof obj === 'string') {
+        return translatedStrings[currentIdx++].translation;
+      } else if (Array.isArray(obj)) {
+        return obj.map(applyTranslations);
       } else if (typeof obj === 'object' && obj !== null) {
         const result: any = {};
         for (const [key, value] of Object.entries(obj)) {
-          result[key] = await translateDeep(value);
+          result[key] = applyTranslations(value);
         }
         return result;
       }
       return obj;
     };
 
-    const translatedData = await translateDeep(data);
+    const translatedData = applyTranslations(data);
     const ext = path.extname(filePath);
     const base = path.basename(filePath, ext);
     const newPath = path.join(path.dirname(filePath), `${base}.${to}${ext}`);
@@ -360,7 +371,7 @@ async function runScanner(dirPath: string, to: string, outputPath: string) {
     ignore: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/package-lock.json']
   });
 
-  const strings = new Set<string>();
+  const stringsSet = new Set<string>();
   const stringRegex = /(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`)/g;
 
   for (const entry of entries) {
@@ -372,36 +383,30 @@ async function runScanner(dirPath: string, to: string, outputPath: string) {
         if (val && val.length > 2 && val.length < 100) {
           // Filter common programming characters/noise
           if (/^[a-zA-Z\s\d,.\-!?]+$/.test(val) && !/^\d+$/.test(val)) {
-            strings.add(val.trim());
+            stringsSet.add(val.trim());
           }
         }
       }
     } catch (e) {}
   }
 
-  spinner.succeed(t.scanFound.replace('%d', strings.size.toString()));
+  const strings = Array.from(stringsSet);
+  spinner.succeed(t.scanFound.replace('%d', strings.length.toString()));
 
   const translations: Record<string, string> = {};
-  const total = strings.size;
-  let current = 0;
+  const translationSpinner = ora(`${t.translating} (${strings.length} keys)...`).start();
 
-  const translationSpinner = ora(`${t.translating} (0/${total})`).start();
-
-  for (const str of Array.from(strings)) {
-    current++;
-    translationSpinner.text = `${t.translating} (${current}/${total})`;
-    try {
-      const res = await qlit.translate(str, 'auto', to);
-      const key = generateKey(str);
+  try {
+    const results = await qlit.translateBatch(strings, 'auto', to);
+    results.forEach((res, i) => {
+      const key = generateKey(strings[i]);
       translations[key] = res.translation;
-    } catch (e) {
-      // In case of error, just use string placeholder
-      const key = generateKey(str);
-      translations[key] = str;
-    }
+    });
+    translationSpinner.succeed(t.done);
+  } catch (err: any) {
+    translationSpinner.fail(`${t.errorPrefix} ${err.message}`);
+    return;
   }
-
-  translationSpinner.succeed(t.done);
   
   const finalJson = { translation: translations };
   fs.writeFileSync(outputPath, JSON.stringify(finalJson, null, 2));

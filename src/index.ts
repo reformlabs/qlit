@@ -143,16 +143,16 @@ export class Qlit {
   }
 
   /**
-   * Translates text using DeepL API with node-fetch.
+   * Translates multiple strings using DeepL API in a single request (batching).
    */
-  private async translateDeepL(text: string, to: string): Promise<string> {
+  private async translateDeepLBatch(texts: string[], to: string): Promise<string[]> {
     if (!this.deepLKey) throw new Error('No DeepL API key');
 
     const isFree = this.deepLKey.endsWith(':fx');
     const baseUrl = isFree ? 'https://api-free.deepl.com/v2/translate' : 'https://api.deepl.com/v2/translate';
 
     const params = new URLSearchParams();
-    params.append('text', text);
+    texts.forEach(text => params.append('text', text));
     params.append('target_lang', to.toUpperCase());
     params.append('tag_handling', 'xml');
 
@@ -170,7 +170,7 @@ export class Qlit {
     }
 
     const data: any = await response.json();
-    return data.translations[0].text;
+    return data.translations.map((t: any) => t.text);
   }
 
   /**
@@ -178,61 +178,109 @@ export class Qlit {
    * Prioritizes DeepL if DEEPL_API_KEY is available.
    */
   async translate(text: string, from: string | LanguageCode, to: string | LanguageCode): Promise<TranslationResponse> {
-    const cacheKey = `${from}:${to}:${text}`;
-    const cached = this.cache.get<TranslationResponse>(cacheKey);
-    if (cached) return cached;
+    const batchResults = await this.translateBatch([text], from, to);
+    return batchResults[0];
+  }
 
-    const { protectedText, map } = this.protectMarkdown(text);
-    let lastError: any;
+  /**
+   * Translates multiple texts in high-performance mode.
+   * Uses DeepL batching and Lingva parallel fetching.
+   */
+  async translateBatch(texts: string[], from: string | LanguageCode, to: string | LanguageCode, concurrency = 10): Promise<TranslationResponse[]> {
+    if (texts.length === 0) return [];
 
-    // Try DeepL if key exists
+    const results: TranslationResponse[] = new Array(texts.length);
+    const indicesToTranslate: number[] = [];
+    const protectedData: { protectedText: string, map: Record<string, string> }[] = [];
+
+    // 1. Check Cache & Protect Markdown
+    texts.forEach((text, i) => {
+      const cacheKey = `${from}:${to}:${text}`;
+      const cached = this.cache.get<TranslationResponse>(cacheKey);
+      if (cached) {
+        results[i] = cached;
+      } else {
+        indicesToTranslate.push(i);
+        protectedData.push(this.protectMarkdown(text));
+      }
+    });
+
+    if (indicesToTranslate.length === 0) return results;
+
+    const textsToTranslate = protectedData.map(d => d.protectedText);
+
+    // 2. Try DeepL Batch if key exists
     if (this.deepLKey) {
       try {
-        const translation = await this.translateDeepL(protectedText, to);
-        const result: TranslationResponse = {
-          translation: this.restoreMarkdown(translation, map),
-          engine: 'deepl'
-        };
-        this.cache.set(cacheKey, result);
-        return result;
+        const batchSize = 50;
+        for (let i = 0; i < textsToTranslate.length; i += batchSize) {
+          const chunk = textsToTranslate.slice(i, i + batchSize);
+          const translations = await this.translateDeepLBatch(chunk, to);
+          
+          translations.forEach((trans, chunkIdx) => {
+            const globalIdx = indicesToTranslate[i + chunkIdx];
+            const originalProtected = protectedData[i + chunkIdx];
+            const finalTranslation = this.restoreMarkdown(trans, originalProtected.map);
+            
+            const res: TranslationResponse = { translation: finalTranslation, engine: 'deepl' };
+            results[globalIdx] = res;
+            this.cache.set(`${from}:${to}:${texts[globalIdx]}`, res);
+          });
+        }
+        return results;
       } catch (err: any) {
-        lastError = err;
         if (err.message?.includes('403')) {
-           console.error('DeepL Auth Error: Using Lingva fallbacks.');
+          console.error('DeepL Auth Error: Using Lingva fallbacks.');
+        } else {
+          console.warn('DeepL Batch failed, falling back to Lingva:', err.message);
         }
       }
     }
 
-    // Lingva Fallback / Default
-    for (const baseUrl of this.instances) {
-      try {
-        const url = `${baseUrl.replace(/\/$/, '')}/api/v1/${from}/${to}/${encodeURIComponent(protectedText)}`;
-        const response = await fetch(url, { timeout: 5000 });
-        
-        if (!response.ok) {
-          if (response.status === 429 || response.status >= 500) continue;
-          throw new Error(`Lingva Error: ${response.statusText}`);
-        }
+    // 3. Lingva Fallback with Parallel Concurrency
+    const processInstance = async (idxInToTranslate: number): Promise<TranslationResponse> => {
+      const originalText = texts[indicesToTranslate[idxInToTranslate]];
+      const protectedText = textsToTranslate[idxInToTranslate];
+      const pMap = protectedData[idxInToTranslate].map;
 
-        const data: any = await response.json();
-        let result: TranslationResponse = {
-          translation: this.restoreMarkdown(data.translation, map),
-          engine: 'lingva',
-          info: data.info
-        };
-        
-        this.cache.set(cacheKey, result);
-        return result;
-      } catch (error: any) {
-        lastError = error;
-        if (error.name === 'FetchError' || error.code === 'ECONNABORTED') {
+      let lastError: any;
+      for (const baseUrl of this.instances) {
+        try {
+          const url = `${baseUrl.replace(/\/$/, '')}/api/v1/${from}/${to}/${encodeURIComponent(protectedText)}`;
+          const response = await fetch(url, { timeout: 10000 });
+          
+          if (!response.ok) {
+            if (response.status === 429 || response.status >= 500) continue;
+            throw new Error(`Lingva Error: ${response.statusText}`);
+          }
+
+          const data: any = await response.json();
+          const res: TranslationResponse = {
+            translation: this.restoreMarkdown(data.translation, pMap),
+            engine: 'lingva',
+            info: data.info
+          };
+          this.cache.set(`${from}:${to}:${originalText}`, res);
+          return res;
+        } catch (error: any) {
+          lastError = error;
           continue;
         }
-        throw error;
       }
+      throw lastError || new Error('All mirrors failed');
+    };
+
+    // Parallelize with concurrency limit
+    for (let i = 0; i < indicesToTranslate.length; i += concurrency) {
+      const chunkRange = Array.from({ length: Math.min(concurrency, indicesToTranslate.length - i) }, (_, k) => i + k);
+      const chunkResults = await Promise.all(chunkRange.map(idx => processInstance(idx)));
+      
+      chunkResults.forEach((res, k) => {
+        results[indicesToTranslate[i + k]] = res;
+      });
     }
 
-    throw lastError || new Error('All mirrors failed');
+    return results;
   }
 
   /**
