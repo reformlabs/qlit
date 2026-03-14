@@ -9,32 +9,24 @@ High-performance CLI translator and i18n automation tool with DeepL integration,
 > [!IMPORTANT]
 > This project is developed by **Reform Labs**. Users are free to use the system and contribute, but they may not redistribute it by claiming ownership as if it were their own project.
 
-* **DeepL Integration**: Automatically switches to the high-quality DeepL engine when an API key is provided.
-* **Aggressive Parallelization**: Translates multiple strings concurrently using mirror rotation and high-performance worker pools (v2.8.0+).
-* **Batch & Deduplication**: Sends batch requests (DeepL) and deduplicates identical strings to reduce network overhead and increase speed.
-* **Auto-i18n Generator**: Scans your source code (`.js`, `.ts`, `.py`, `.html`, etc.) for hardcoded strings and generates a translated JSON file instantly.
-* **i18n Support**: Bulk translates JSON/YAML localization files while preserving their keys.
-* **Auto-Mirror (Uninterrupted Service)**: Automatically switches between 8+ different servers to provide an “always-working” experience.
-* **Smart Cache**: Avoids sending API requests for identical translations for 5 minutes, improving speed.
-* **Markdown Support**: Preserves `code`, **bold**, *italic*, and links during translation.
-* **File Translator**: Translates text files line-by-line using batch processing.
-* **Professional CLI**: Features Ora spinners, Chalk colors, clipboard support, and clean outputs (silenced third-party logs).
+## Features ⚡
+
+* **Turbo Parallel Engine**: Translates up to **30+ strings concurrently** using a high-performance worker pool (sliding window).
+* **Mirror Rotation (v3.0.0)**: Automatically rotates between **14+ global mirrors** to bypass rate limits and ensure maximum uptime.
+* **DeepL Native Batching**: Sends up to 50 strings in a single request for lightning-fast DeepL translations.
+* **Intelligent Deduplication**: Automatically detects identical strings in bulk tasks (like i18n JSONs) and translates them only once.
+* **Auto-i18n Generator (Scanner)**: Scans your source code (`.js`, `.ts`, `.py`, `.html`, etc.) for hardcoded strings and generates a translated JSON file instantly.
+* **Smart Filtering**: Automatically ignores `node_modules`, `dist`, and system files during scanning.
+* **Markdown Preservation**: Fully preserves **bold**, *italic*, `code`, and [links] during translation.
+* **Clean & Professional**: 100% silenced third-party module logs and a premium CLI experience with Ora spinners and Chalk colors.
 
 ## Installation
 
 ```bash
-npm install -g qlit
+npm install -g @reformlabs/qlit
 ```
 
 ## CLI Usage
-
-Start by configuring the CLI language and the default target language:
-
-```bash
-qlit config tr
-```
-
-*(Sets the CLI language to Turkish and the default target language to TR.)*
 
 ### Basic Commands
 
@@ -65,29 +57,25 @@ qlit config tr
   Translates all files within a folder recursively while maintaining the file structure.
   *Example:* `qlit --folder ./locales to en`
 
-### Advanced Usage & Options
+### Advanced Options
 
-* **Pipe Support**: `cat logs.txt | qlit to tr`
-  Translates outputs coming from other commands directly.
+* **Configurable Concurrency**: Use `-p` or `--parallel` to set worker count.
+  *Example:* `qlit i18n large.json --to de --parallel 50`
 
-* **File Translation**: `qlit to en -f readme.txt`
-  Reads a file and saves the result as `readme_en.txt`.
+* **Interactive Shell**: `qlit -i`
+  Opens a persistent, fast translation session.
 
-* **Interactive Mode**: `qlit -i`
-  Opens a fast shell for continuous translations.
+* **Clipboard Support**: Add `--copy` to result-copying flow.
 
-* **JSON Mode**: `qlit "Hello" --json`
-  Returns full API data (pronunciation, definitions, etc.) as JSON.
-
-* **Clipboard Support**: `--copy`
-  Automatically copies the translation result to the clipboard.
+* **JSON Data**: Add `--json` to get full linguistic data (definitions, examples).
 
 ### Options List
 
-* `-c, --copy`: Copies the result to the clipboard.
-* `-j, --json`: Returns full JSON output.
-* `-f, --file <path>`: Performs file translation.
-* `-i, --interactive`: Starts an interactive shell.
+* `-p, --parallel <n>`: Set concurrency limit (default: 30).
+* `-c, --copy`: Copy result to clipboard.
+* `-j, --json`: Output full developer JSON response.
+* `-f, --file <path>`: Perform file content translation.
+* `-i, --interactive`: Start an interactive translation shell.
 
 ---
 
@@ -109,10 +97,9 @@ async function test() {
 ### TypeScript
 
 ```typescript
-import qlit, { Language } from 'qlit';
+import qlit from '@reformlabs/qlit';
 
 const res = await qlit.translate('Hello', 'en', 'tr');
-const langs: Language[] = await qlit.getLanguages();
 ```
 
 ## .env Configuration (Optional)
