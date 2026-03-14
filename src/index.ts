@@ -5,7 +5,11 @@ import NodeCache from 'node-cache';
 try {
   // Use a dynamic check to load dotenv only if present
   const dotenv = require('dotenv');
+  // Some versions of dotenv or its wrappers are noisy, silence them
+  const originalLog = console.log;
+  console.log = () => {}; 
   dotenv.config();
+  console.log = originalLog;
 } catch (e) {
   // dotenv not found or failed, which is fine for production
 }
@@ -193,21 +197,31 @@ export class Qlit {
     const indicesToTranslate: number[] = [];
     const protectedData: { protectedText: string, map: Record<string, string> }[] = [];
 
-    // 1. Check Cache & Protect Markdown
+    // 1. Check Cache, Deduplicate & Protect Markdown
+    const uniqueStringsToTranslate = new Map<string, { protectedText: string, map: Record<string, string>, indices: number[] }>();
+
     texts.forEach((text, i) => {
       const cacheKey = `${from}:${to}:${text}`;
       const cached = this.cache.get<TranslationResponse>(cacheKey);
+      
       if (cached) {
         results[i] = cached;
       } else {
-        indicesToTranslate.push(i);
-        protectedData.push(this.protectMarkdown(text));
+        if (uniqueStringsToTranslate.has(text)) {
+          uniqueStringsToTranslate.get(text)!.indices.push(i);
+        } else {
+          uniqueStringsToTranslate.set(text, {
+            ...this.protectMarkdown(text),
+            indices: [i]
+          });
+        }
       }
     });
 
-    if (indicesToTranslate.length === 0) return results;
+    if (uniqueStringsToTranslate.size === 0) return results;
 
-    const textsToTranslate = protectedData.map(d => d.protectedText);
+    const uniqueTextsData = Array.from(uniqueStringsToTranslate.entries());
+    const textsToTranslate = uniqueTextsData.map(([_, d]) => d.protectedText);
 
     // 2. Try DeepL Batch if key exists
     if (this.deepLKey) {
@@ -215,16 +229,21 @@ export class Qlit {
         const batchSize = 50;
         for (let i = 0; i < textsToTranslate.length; i += batchSize) {
           const chunk = textsToTranslate.slice(i, i + batchSize);
+          const chunkData = uniqueTextsData.slice(i, i + batchSize);
           const translations = await this.translateDeepLBatch(chunk, to);
           
           translations.forEach((trans, chunkIdx) => {
-            const globalIdx = indicesToTranslate[i + chunkIdx];
-            const originalProtected = protectedData[i + chunkIdx];
-            const finalTranslation = this.restoreMarkdown(trans, originalProtected.map);
+            const originalData = chunkData[chunkIdx][1];
+            const originalText = chunkData[chunkIdx][0];
+            const finalTranslation = this.restoreMarkdown(trans, originalData.map);
             
             const res: TranslationResponse = { translation: finalTranslation, engine: 'deepl' };
-            results[globalIdx] = res;
-            this.cache.set(`${from}:${to}:${texts[globalIdx]}`, res);
+            
+            // Apply to all indices that had this text
+            originalData.indices.forEach(idx => {
+              results[idx] = res;
+            });
+            this.cache.set(`${from}:${to}:${originalText}`, res);
           });
         }
         return results;
@@ -237,17 +256,21 @@ export class Qlit {
       }
     }
 
-    // 3. Lingva Fallback with Parallel Concurrency
-    const processInstance = async (idxInToTranslate: number): Promise<TranslationResponse> => {
-      const originalText = texts[indicesToTranslate[idxInToTranslate]];
-      const protectedText = textsToTranslate[idxInToTranslate];
-      const pMap = protectedData[idxInToTranslate].map;
+    // 3. Lingva Fallback with Parallel Concurrency & Mirror Rotation
+    const processInstance = async (idxInUnique: number): Promise<TranslationResponse> => {
+      const entry = uniqueTextsData[idxInUnique];
+      const originalText = entry[0];
+      const protectedText = entry[1].protectedText;
+      const pMap = entry[1].map;
 
       let lastError: any;
-      for (const baseUrl of this.instances) {
+      const startMirrorIdx = Math.floor(Math.random() * this.instances.length);
+      
+      for (let i = 0; i < this.instances.length; i++) {
+        const baseUrl = this.instances[(startMirrorIdx + i) % this.instances.length];
         try {
           const url = `${baseUrl.replace(/\/$/, '')}/api/v1/${from}/${to}/${encodeURIComponent(protectedText)}`;
-          const response = await fetch(url, { timeout: 10000 });
+          const response = await fetch(url, { timeout: 4000 }); // Faster 4s timeout for better failover in batches
           
           if (!response.ok) {
             if (response.status === 429 || response.status >= 500) continue;
@@ -270,16 +293,29 @@ export class Qlit {
       throw lastError || new Error('All mirrors failed');
     };
 
-    // Parallelize with concurrency limit
-    for (let i = 0; i < indicesToTranslate.length; i += concurrency) {
-      const chunkRange = Array.from({ length: Math.min(concurrency, indicesToTranslate.length - i) }, (_, k) => i + k);
-      const chunkResults = await Promise.all(chunkRange.map(idx => processInstance(idx)));
-      
-      chunkResults.forEach((res, k) => {
-        results[indicesToTranslate[i + k]] = res;
-      });
-    }
+    // Worker Pool Parallelization (Sliding Window)
+    const queue = Array.from({ length: uniqueTextsData.length }, (_, k) => k);
+    const workers = Array.from({ length: concurrency }, async () => {
+      while (queue.length > 0) {
+        const itemIdx = queue.shift();
+        if (itemIdx === undefined) break;
+        try {
+          const result = await processInstance(itemIdx);
+          const originalData = uniqueTextsData[itemIdx][1];
+          originalData.indices.forEach(idx => {
+            results[idx] = result;
+          });
+        } catch (e: any) {
+          const originalData = uniqueTextsData[itemIdx][1];
+          const originalText = uniqueTextsData[itemIdx][0];
+          originalData.indices.forEach(idx => {
+            results[idx] = { translation: originalText, engine: 'lingva' };
+          });
+        }
+      }
+    });
 
+    await Promise.all(workers);
     return results;
   }
 

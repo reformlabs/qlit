@@ -234,7 +234,7 @@ async function translateFile(filePath: string, toLangs: string[]) {
   for (const to of toLangs) {
     const spinner = ora(`${t.translating} file [${path.basename(filePath)}] to [${to}]...`).start();
     try {
-      const results = await qlit.translateBatch(nonEmptyLines, 'auto', to);
+      const results = await qlit.translateBatch(nonEmptyLines, 'auto', to, 20);
       
       let resIdx = 0;
       const translatedLines = lines.map(line => {
@@ -298,7 +298,7 @@ async function translateI18n(filePath: string, to: string) {
     };
     
     collectStrings(data);
-    const translatedStrings = await qlit.translateBatch(strings, 'auto', to);
+    const translatedStrings = await qlit.translateBatch(strings, 'auto', to, 20);
     
     let currentIdx = 0;
     const applyTranslations = (obj: any): any => {
@@ -397,7 +397,7 @@ async function runScanner(dirPath: string, to: string, outputPath: string) {
   const translationSpinner = ora(`${t.translating} (${strings.length} keys)...`).start();
 
   try {
-    const results = await qlit.translateBatch(strings, 'auto', to);
+    const results = await qlit.translateBatch(strings, 'auto', to, 20);
     results.forEach((res, i) => {
       const key = generateKey(strings[i]);
       translations[key] = res.translation;
