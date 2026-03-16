@@ -7,7 +7,7 @@
 High-performance CLI translator and i18n automation tool with DeepL integration, parallel processing, and auto-generated localization.
 
 > [!IMPORTANT]
-> This project is developed by **Reform Labs**. Users are free to use the system and contribute, but they may not redistribute it by claiming ownership as if it were their own project.
+> This project is developed by **Reform Labs**. Users are free to use the system and contribute, but they may not redistribute it by claiming ownership as if it were their own project. More: https://github.com/reformlabs
 
 ## Features ⚡
 
